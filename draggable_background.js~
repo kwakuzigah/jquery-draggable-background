@@ -66,43 +66,6 @@
     this.init();
   }
 
-
-    function centerElement(element, type, callback) {
-        var bgSrc = (element.css('background-image').match(/^url\(['"]?(.*?)['"]?\)$/i) || [])[1],
-            imageDimensions = { width: 0, height: 0 },
-            image = new Image(),
-            elementWidth = element.innerWidth(),
-            elementHeight = element.innerHeight(),
-            elementAspectRatio = elementWidth / elementHeight,
-            imageAspectRatio = image.width / image.height,
-            scale = 1,
-            xpos = 0,
-            ypos = 0;
-        image.onload = function() {
-            if (type == 'contain') {
-                if (imageAspectRatio >= elementAspectRatio) {
-                    scale = elementHeight / image.height;
-                } else {
-                    scale = elementWidth / image.width;
-                }
-            } else if (type == 'cover') {
-                if (imageAspectRatio >= elementAspectRatio) {
-                    scale = elementWidth / image.width;
-                } else {
-                    scale = elementHeight / image.height;
-                }
-            }
-
-            imageDimensions.width = image.width * scale;
-            imageDimensions.height = image.height * scale;
-            xpos = (elementWidth - imageDimensions.width) / 2;
-            ypos = (elementHeight - imageDimensions.height ) / 2;
-            callback(xpos, ypos);
-//            scope.applyPosition(xpos+'px', ypos+'px');
-        };
-        image.src = bgSrc;
-    }
-
   Plugin.prototype.init = function() {
     var $el = $(this.element),
         bgSrc = ($el.css('background-image').match(/^url\(['"]?(.*?)['"]?\)$/i) || [])[1],
@@ -128,51 +91,38 @@
         return;
       }
 
+      var x0 = e.clientX,
+          y0 = e.clientY,
+          pos = $el.css('background-position').match(/(-?\d+).*?\s(-?\d+)/) || [],
+          xPos = parseInt(pos[1]) || 0,
+          yPos = parseInt(pos[2]) || 0;
 
-        var pos = $el.css('background-position').match(/(-?\d+).*?\s(-?\d+)/) || [],
-            size = $el.css('background-size'),
-            xPos = parseInt(pos[1]) || 0,
-            yPos = parseInt(pos[2]) || 0;
-        var addMoveListeners =  function() {
+      $window.on('mousemove.dbg touchmove.dbg', function(e) {
+        e.preventDefault();
 
-            var x0 = e.clientX,
-                y0 = e.clientY;
-            $window.on('mousemove.dbg touchmove.dbg', function(e) {
-                e.preventDefault();
-
-                if (e.originalEvent.touches) {
-                    modifyEventForTouch(e);
-                }
-
-                var x = e.clientX,
-                    y = e.clientY;
-
-                xPos = options.axis === 'y' ? xPos : limit($el.innerWidth()-imageDimensions.width, 0, xPos+x-x0, options.bound);
-                yPos = options.axis === 'x' ? yPos : limit($el.innerHeight()-imageDimensions.height, 0, yPos+y-y0, options.bound);
-                x0 = x;
-                y0 = y;
-
-                $el.css('background-position', xPos + 'px ' + yPos + 'px');
-            });
-
-            $window.on('mouseup.dbg touchend.dbg', function() {
-                if (options.done) {
-                    options.done();
-                }
-
-                $window.off('mousemove.dbg touchmove.dbg');
-                $window.off('mouseup.dbg touchend.dbg');
-            });
+        if (e.originalEvent.touches) {
+          modifyEventForTouch(e);
         }
-        if (pos.input == "50% 50%" && (size == "contain" || size == "cover")) {
-            centerElement($el, size, function(computedX, computedY) {
-                xPos = computedX;
-                yPos = computedY;
-                addMoveListeners();
-            });
-        } else {
-            addMoveListeners();
+
+        var x = e.clientX,
+            y = e.clientY;
+
+        xPos = options.axis === 'y' ? xPos : limit($el.innerWidth()-imageDimensions.width, 0, xPos+x-x0, options.bound);
+        yPos = options.axis === 'x' ? yPos : limit($el.innerHeight()-imageDimensions.height, 0, yPos+y-y0, options.bound);
+        x0 = x;
+        y0 = y;
+
+        $el.css('background-position', xPos + 'px ' + yPos + 'px');
+      });
+
+      $window.on('mouseup.dbg touchend.dbg mouseleave.dbg', function() {
+        if (options.done) {
+          options.done();
         }
+
+        $window.off('mousemove.dbg touchmove.dbg');
+        $window.off('mouseup.dbg touchend.dbg mouseleave.dbg');
+      });
     });
   };
 
@@ -205,4 +155,3 @@
     axis: undefined
   };
 }(jQuery));
-
